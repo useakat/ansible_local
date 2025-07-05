@@ -79,6 +79,10 @@
   shell: "echo {{ github_token }} | gh auth login --with-token"
   tags: [common, github-cli]
 
+- name: Configure git to use GitHub CLI for authentication
+  shell: "gh auth setup-git"
+  tags: [common, github-cli]
+
 # AWS CLI Installation
 - name: Download and unarchive the AWS CLI installer
   become: yes
