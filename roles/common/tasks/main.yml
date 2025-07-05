@@ -101,6 +101,7 @@
   shell: |
     aws configure set aws_access_key_id {{ aws_access_key_id }}
     aws configure set aws_secret_access_key {{ aws_secret_access_key }}
+    aws configure set region us-east-1
   tags: [common, aws-cli]
 
 - name: Add aliases to .bashrc
@@ -115,5 +116,6 @@
       alias ..='cd ..'
       alias ls="ls --color=auto --ignore='*~'"
       alias anpl='ansible-playbook -i ${ANSIBLE_HOME}/inventory/hosts ${ANSIBLE_HOME}/site.yml --vault-password-file ${ANSIBLE_HOME}/.vault_pass.txt'
+      alias eantask='emacs ${ANSIBLE_HOME}/roles/common/tasks/main.yml'
     create: yes
   tags: [common, alias]
