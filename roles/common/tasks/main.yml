@@ -43,49 +43,51 @@
   tags: [common, gemini-cli]
 
 # GitHub CLI Installation
-- name: Create keyring directory for GitHub CLI
-  become: yes
+- name: Create a directory for GitHub CLI
   file:
-    path: /etc/apt/keyrings
+    path: "{{ ansible_env.HOME }}/.local/bin"
     state: directory
     mode: '0755'
   tags: [common, github-cli]
 
-- name: Download GitHub CLI GPG key
-  become: yes
-  get_url:
-    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
-    dest: /etc/apt/keyrings/githubcli-archive-keyring.gpg
-    mode: '0644'
+- name: Download and unarchive the GitHub CLI
+  unarchive:
+    src: "https://github.com/cli/cli/releases/download/v2.51.0/gh_2.51.0_linux_amd64.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
   tags: [common, github-cli]
 
-- name: Add GitHub CLI apt repository
-  become: yes
-  apt_repository:
-    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"
-    filename: github-cli
-    state: present
+- name: Move the gh binary to the local bin directory
+  copy:
+    src: "/tmp/gh_2.51.0_linux_amd64/bin/gh"
+    dest: "{{ ansible_env.HOME }}/.local/bin/gh"
+    mode: '0755'
+    remote_src: yes
   tags: [common, github-cli]
 
-- name: Install GitHub CLI
-  become: yes
-  apt:
-    name: gh
-    update_cache: yes
+- name: Add .local/bin to .bashrc if it's not there
+  lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: 'export PATH=$HOME/.local/bin:$PATH'
+    regexp: '^export PATH=\$HOME\/\.local\/bin:\$PATH$'
     state: present
+    create: yes
   tags: [common, github-cli]
 
 - name: Authenticate with GitHub CLI
-  shell: "echo {{ github_token }} | gh auth login --with-token"
+  shell: "echo {{ github_token }} | {{ ansible_env.HOME }}/.local/bin/gh auth login --with-token"
+  args:
+    chdir: "{{ ansible_env.HOME }}"
   tags: [common, github-cli]
 
 - name: Configure git to use GitHub CLI for authentication
-  shell: "gh auth setup-git"
+  shell: "{{ ansible_env.HOME }}/.local/bin/gh auth setup-git"
+  args:
+    chdir: "{{ ansible_env.HOME }}"
   tags: [common, github-cli]
 
 # AWS CLI Installation
 - name: Download and unarchive the AWS CLI installer
-  become: yes
   unarchive:
     src: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
     dest: /tmp
@@ -93,15 +95,14 @@
   tags: [common, aws-cli]
 
 - name: Run the AWS CLI installer
-  become: yes
-  command: /tmp/aws/install
+  command: /tmp/aws/install -i {{ ansible_env.HOME }}/.local/aws-cli -b {{ ansible_env.HOME }}/.local/bin
   tags: [common, aws-cli]
 
 - name: Configure AWS CLI
   shell: |
-    aws configure set aws_access_key_id {{ aws_access_key_id }}
-    aws configure set aws_secret_access_key {{ aws_secret_access_key }}
-    aws configure set region us-east-1
+    {{ ansible_env.HOME }}/.local/bin/aws configure set aws_access_key_id {{ aws_access_key_id }}
+    {{ ansible_env.HOME }}/.local/bin/aws configure set aws_secret_access_key {{ aws_secret_access_key }}
+    {{ ansible_env.HOME }}/.local/bin/aws configure set region us-east-1
   tags: [common, aws-cli]
 
 - name: Add aliases to .bashrc
