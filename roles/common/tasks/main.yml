@@ -93,18 +93,10 @@
   command: /tmp/aws/install
   tags: [common, aws-cli]
 
-- name: Add AWS Access Key ID to .bashrc
-  lineinfile:
-    path: "{{ ansible_env.HOME }}/.bashrc"
-    line: "export AWS_ACCESS_KEY_ID='{{ aws_access_key_id }}'"
-    create: yes
-  tags: [common, aws-cli]
-
-- name: Add AWS Secret Access Key to .bashrc
-  lineinfile:
-    path: "{{ ansible_env.HOME }}/.bashrc"
-    line: "export AWS_SECRET_ACCESS_KEY='{{ aws_secret_access_key }}'"
-    create: yes
+- name: Configure AWS CLI
+  shell: |
+    aws configure set aws_access_key_id {{ aws_access_key_id }}
+    aws configure set aws_secret_access_key {{ aws_secret_access_key }}
   tags: [common, aws-cli]
 
 - name: Add aliases to .bashrc
