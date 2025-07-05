@@ -1,0 +1,123 @@
+---
+# tasks file for common
+- name: Update apt cache and install prerequisites
+  become: yes
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gpg
+      - python3-pip
+      - nodejs
+      - npm
+      - emacs
+      - unzip
+    update_cache: yes
+    cache_valid_time: 3600
+    state: present
+  tags: [common, prerequisites]
+
+# Ansible installation
+- name: Install Ansible
+  become: yes
+  pip:
+    name: ansible
+    state: present
+  tags: [common, ansible]
+
+# GEMINI CLI installation
+- name: Install Gemini CLI
+  become: yes
+  npm:
+    name: '@google/gemini-cli'
+    global: yes
+    state: present
+  tags: [common, gemini-cli]
+
+- name: Add Gemini API Key to .bashrc
+  lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: "export GEMINI_API_KEY='{{ gemini_api_key }}'"
+    create: yes
+  tags: [common, gemini-cli]
+
+# GitHub CLI Installation
+- name: Create keyring directory for GitHub CLI
+  become: yes
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  tags: [common, github-cli]
+
+- name: Download GitHub CLI GPG key
+  become: yes
+  get_url:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    dest: /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    mode: '0644'
+  tags: [common, github-cli]
+
+- name: Add GitHub CLI apt repository
+  become: yes
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"
+    filename: github-cli
+    state: present
+  tags: [common, github-cli]
+
+- name: Install GitHub CLI
+  become: yes
+  apt:
+    name: gh
+    update_cache: yes
+    state: present
+  tags: [common, github-cli]
+
+- name: Authenticate with GitHub CLI
+  shell: "echo {{ github_token }} | gh auth login --with-token"
+  tags: [common, github-cli]
+
+# AWS CLI Installation
+- name: Download and unarchive the AWS CLI installer
+  become: yes
+  unarchive:
+    src: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    dest: /tmp
+    remote_src: yes
+  tags: [common, aws-cli]
+
+- name: Run the AWS CLI installer
+  become: yes
+  command: /tmp/aws/install
+  tags: [common, aws-cli]
+
+- name: Add AWS Access Key ID to .bashrc
+  lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: "export AWS_ACCESS_KEY_ID='{{ aws_access_key_id }}'"
+    create: yes
+  tags: [common, aws-cli]
+
+- name: Add AWS Secret Access Key to .bashrc
+  lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: "export AWS_SECRET_ACCESS_KEY='{{ aws_secret_access_key }}'"
+    create: yes
+  tags: [common, aws-cli]
+
+- name: Add aliases to .bashrc
+  blockinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    block: |
+      export ANSIBLE_HOME=${HOME}/ansible_local
+      alias e='emacs'
+      alias sb='source ~/.bashrc'
+      alias eb='emacs ~/.bashrc'
+      alias rmrf='rm -rf'
+      alias ..='cd ..'
+      alias ls="ls --color=auto --ignore='*~'"
+      alias anpl='ansible-playbook -i ${ANSIBLE_HOME}/inventory/hosts ${ANSIBLE_HOME}/site.yml --vault-password-file ${ANSIBLE_HOME}/.vault_pass.txt'
+    create: yes
+  tags: [common, alias]

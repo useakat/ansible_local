@@ -1,0 +1,5 @@
+---
+- name: Configure Local Server
+  hosts: local
+  roles:
+    - common
